@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pantheon Raid Teams - Dynamic Database</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e24;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Header Area */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .guild-banner {
+            height: 75px;
+            max-width: 100%;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            object-fit: contain;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .team-container {
+            flex: 1;
+            min-width: 500px;
+            background-color: #2b2b36;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .team-header {
+            background-color: #44444f;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #1e1e24;
+        }
+
+        .launch-bar {
+            background-color: #555561;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #1e1e24;
+        }
+
+        .launch-btn {
+            background-color: #d0e3ff;
+            color: #333;
+            border: none;
+            padding: 7px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .launch-btn:hover {
+            background-color: #a9cbfc;
+        }
+        
+        .reset-btn {
+            background-color: #ffb3b3;
+            height: 40px;
+        }
+
+        .reset-btn:hover {
+            background-color: #ff8080;
+        }
+
+        .retract-btn {
+            background-color: #ffccb3;
+        }
+
+        .retract-btn:hover {
+            background-color: #ff9966;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+
+        th {
+            background-color: #33333d;
+            padding: 12px 8px;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #1e1e24;
+            border-right: 1px solid #1e1e24;
+        }
+
+        th:last-child {
+            border-right: none;
+        }
+
+        td {
+            padding: 8px 6px;
+            border-bottom: 1px solid #3a3a48;
+            border-right: 1px solid #3a3a48;
+            font-size: 0.95rem;
+            background-color: #fcfcfc;
+            color: #333;
+            height: 30px;
+            vertical-align: middle;
+        }
+
+        td:last-child {
+            border-right: none;
+        }
+
+        /* Generic Background States */
+        .default-bg { background-color: #fcfcfc !important; }
+        
+        /* Gear Classification Colors */
+        .geared { background-color: #b5e5c5 !important; } /* Green */
+        .semi-geared { background-color: #fceea7 !important; } /* Yellow */
+        .normal-geared { background-color: #f7bab4 !important; } /* Red */
+
+        /* Job Base Class Colors */
+        .job-warrior { background-color: #fbd4b4 !important; color: #000 !important; } /* Orange */
+        .job-archer { background-color: #c6e0b4 !important; color: #000 !important; } /* Green */
+        .job-cleric { background-color: #bdf2fc !important; color: #000 !important; } /* Blue */
+        .job-sorceress { background-color: #e2caec !important; color: #000 !important; } /* Purple */
+        .job-academic { background-color: #ffe699 !important; color: #000 !important; } /* Yellow */
+        .job-kali { background-color: #c9e2de !important; color: #000 !important; } /* Teal */
+
+        /* Real Dropdown Styling mimicking Google Sheets */
+        select.sheet-dropdown {
+            width: 95%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f1f3f4;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #333;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.2s;
+        }
+
+        select.sheet-dropdown:focus {
+            border: 2px solid #1a73e8;
+            padding: 5px; /* Offset for thicker border */
+        }
+
+        @media (max-width: 1000px) {
+            .container {
+                flex-direction: column;
+            }
+            .top-bar {
+                justify-content: center;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <img src="Guild Banner.png" alt="Pantheon Guild Banner" class="guild-banner">
+        <button class="launch-btn reset-btn" onclick="resetWeek()">🔄 Reset Week (Restore All Teams)</button>
+    </div>
+
+    <div class="container">
+        <div class="team-container" id="team-b-container">
+            <div class="team-header">TEAM B</div>
+            <div class="launch-bar">
+                <span style="font-size: 0.9rem; color: #ccc;">Drafting Phase</span>
+                <button class="launch-btn" onclick="launchTeam(this.closest('.team-container'))">Launch Team</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Raid Position</th>
+                        <th>Job</th>
+                        <th>IGN</th>
+                        <th>Gear Classification</th>
+                        <th>Member</th>
+                    </tr>
+                </thead>
+                <tbody id="team-b-body">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="team-container" id="team-c-container">
+            <div class="team-header">TEAM C</div>
+            <div class="launch-bar">
+                <span style="font-size: 0.9rem; color: #ccc;">Drafting Phase</span>
+                <button class="launch-btn" onclick="launchTeam(this.closest('.team-container'))">Launch Team</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Raid Position</th>
+                        <th>Job</th>
+                        <th>IGN</th>
+                        <th>Gear Classification</th>
+                        <th>Member</th>
+                    </tr>
+                </thead>
+                <tbody id="team-c-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="launched-teams-wrapper" style="width: 100%; margin-top: 40px; display: none;">
+        <h2 style="text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 20px;">🚀 Deployed Teams</h2>
+        <div id="launched-teams-container" class="container">
+            </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🗄️ THE COMPREHENSIVE CHARACTER DATABASE
+        // ==========================================
+        const characterDB = {
+            "Z4BIMARU": { job: "Barbarian", role: "Highlander", gear: "Semi Geared", member: "2JIZZ" },
+            "3RDITY": { job: "Gladiator", role: "Highlander", gear: "Semi Geared", member: "2JIZZ" },
+            "2JIZZ": { job: "Moonlord", role: "Highlander", gear: "Geared", member: "2JIZZ" },
+            "2ArCyLyn8": { job: "Shooting Star", role: "DPS", gear: "Geared", member: "ARCYLYN" },
+            "4ArCyLyn17": { job: "Barbarian", role: "Highlander", gear: "Semi Geared", member: "ARCYLYN" },
+            "lArCyLynl": { job: "Barbarian", role: "Highlander", gear: "Semi Geared", member: "ARCYLYN" },
+            "ArCyLyn417": { job: "Saint", role: "Heal", gear: "Semi Geared", member: "ARCYLYN" },
+            "ARxCYxLYN": { job: "Physician", role: "Heal", gear: "Normal Geared", member: "ARCYLYN" },
+            "ArCyLyn28": { job: "Elestra", role: "Debuff", gear: "Semi Geared", member: "ARCYLYN" },
+            "417ArCyLyn": { job: "Tempest", role: "Spiritual Boost", gear: "Normal Geared", member: "ARCYLYN" },
+            "ArCyxKaLi": { job: "Dark Summoner", role: "Utility", gear: "Semi Geared", member: "ARCYLYN" },
+            "KaLixArCy": { job: "Dark Summoner", role: "Utility", gear: "Normal Geared", member: "ARCYLYN" },
+            "XArCyLynX": { job: "Saint", role: "Heal", gear: "Geared", member: "ARCYLYN" },
+            "17ArCyLyn4": { job: "Majesty", role: "Beyond Time", gear: "Geared", member: "ARCYLYN" },
+            "Kutsilyo": { job: "Moonlord", role: "Highlander", gear: "Geared", member: "Bass" },
+            "Bassilyo": { job: "Moonlord", role: "Highlander", gear: "Geared", member: "Bass" },
+            "Thornilyo": { job: "Barbarian", role: "Highlander", gear: "Geared", member: "Bass" },
+            "Maxiimus": { job: "Crusader", role: "DPS", gear: "Geared", member: "Boltz" },
+            "Aviee": { job: "Sniper", role: "DPS", gear: "Geared", member: "Boltz" },
+            "Boltzzz29": { job: "Inquisitor", role: "DPS", gear: "Geared", member: "Boltz" },
+            "Maxiima": { job: "Soul Eater", role: "Debuff", gear: "Geared", member: "Boltz" },
+            "Briaaar": { job: "Barbarian", role: "Highlander", gear: "Geared", member: "Briaaar" },
+            "RANKET": { job: "Moonlord", role: "Highlander", gear: "Normal Geared", member: "Chean" },
+            "RinPT": { job: "Elestra", role: "Debuff", gear: "Normal Geared", member: "Chean" },
+            "xNocturne": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Chean" },
+            "CheeanPT": { job: "Guardian", role: "Tank", gear: "Geared", member: "Chean" },
+            "FIINWE": { job: "Majesty", role: "Beyond Time", gear: "Semi Geared", member: "Chean" },
+            "iD0ntHeal": { job: "Guardian", role: "Tank", gear: "Geared", member: "Chean" },
+            "Wawaz91": { job: "Gladiator", role: "Highlander", gear: "Normal Geared", member: "Chean" },
+            "GreedisBad": { job: "Destroyer", role: "Highlander", gear: "Normal Geared", member: "Chef" },
+            "Lunaprix": { job: "Physician", role: "Heal", gear: "Normal Geared", member: "Chef" },
+            "xAv3n": { job: "Saint", role: "Heal", gear: "Geared", member: "Chef" },
+            "iTwoeye": { job: "Elestra", role: "Debuff", gear: "Semi Geared", member: "Chef" },
+            "Sumiko": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "Chef" },
+            "Mahapdi": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Chef" },
+            "Biofrost": { job: "Saint", role: "Heal", gear: "Geared", member: "Chef" },
+            "Rhaeala": { job: "Gear Master", role: "DPS", gear: "Normal Geared", member: "Cho" },
+            "Vulcureon": { job: "Destroyer", role: "Highlander", gear: "Geared", member: "Cho" },
+            "Vaelyth": { job: "Elestra", role: "Debuff", gear: "Geared", member: "Cho" },
+            "Mysteln": { job: "Artillery", role: "DPS", gear: "Geared", member: "Cho" },
+            "Diabolina": { job: "Saleana", role: "DPS", gear: "Geared", member: "Cho" },
+            "xDiXx": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "Diz" },
+            "KALIPX0": { job: "Soul Eater", role: "Debuff", gear: "Normal Geared", member: "Diz" },
+            "DiZesses": { job: "Guardian", role: "Tank", gear: "Semi Geared", member: "Diz" },
+            "SKYZZZ": { job: "Tempest", role: "Spiritual Boost", gear: "Normal Geared", member: "Diz" },
+            "Balugs": { job: "Barbarian", role: "Highlander", gear: "Semi Geared", member: "Ghost" },
+            "Zabbyyy": { job: "Gear Master", role: "DPS", gear: "Normal Geared", member: "HEPE" },
+            "Inagi": { job: "Destroyer", role: "Highlander", gear: "Normal Geared", member: "HEPE" },
+            "SevenRonin": { job: "Gladiator", role: "Highlander", gear: "Normal Geared", member: "HEPE" },
+            "xLucariann": { job: "Barbarian", role: "Highlander", gear: "Normal Geared", member: "HEPE" },
+            "Kuyyys": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "HEPE" },
+            "iLucariann": { job: "Moonlord", role: "Highlander", gear: "Semi Geared", member: "HEPE" },
+            "Aybeko": { job: "Shooting Star", role: "DPS", gear: "Semi Geared", member: "Ivy" },
+            "jamiitu": { job: "Destroyer", role: "Highlander", gear: "Semi Geared", member: "Ivy" },
+            "woojinwoo": { job: "Moonlord", role: "Highlander", gear: "Normal Geared", member: "Ivy" },
+            "yugie": { job: "Elestra", role: "Debuff", gear: "Semi Geared", member: "Ivy" },
+            "barbajam": { job: "Barbarian", role: "Highlander", gear: "Semi Geared", member: "Ivy" },
+            "DocTakao005": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "JC" },
+            "akedia": { job: "Smasher", role: "Beyond Time", gear: "Normal Geared", member: "JC" },
+            "FaeNoir": { job: "Elestra", role: "Debuff", gear: "Normal Geared", member: "JC" },
+            "Takai005": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "JC" },
+            "Feanoir": { job: "Majesty", role: "Beyond Time", gear: "Geared", member: "JC" },
+            "Holywater5": { job: "Saint", role: "Heal", gear: "Semi Geared", member: "JC" },
+            "xTakaiiiii": { job: "Soul Eater", role: "Debuff", gear: "Semi Geared", member: "JC" },
+            "GlutaC": { job: "Adept", role: "DPS", gear: "Semi Geared", member: "Kat" },
+            "Alfukot": { job: "Adept", role: "DPS", gear: "Semi Geared", member: "Kat" },
+            "Avocat": { job: "Soul Eater", role: "Debuff", gear: "Semi Geared", member: "Kat" },
+            "KatsuDont": { job: "Smasher", role: "Beyond Time", gear: "Geared", member: "Kat" },
+            "Alfukat": { job: "Artillery", role: "DPS", gear: "Geared", member: "Kat" },
+            "Raphia": { job: "Majesty", role: "Beyond Time", gear: "Semi Geared", member: "Kat" },
+            "KokkuShibo": { job: "Moonlord", role: "Highlander", gear: "Geared", member: "KokkuShibo" },
+            "Tuperie": { job: "Barbarian", role: "Highlander", gear: "Geared", member: "KokkuShibo" },
+            "Onaru": { job: "Artillery", role: "DPS", gear: "Geared", member: "KokkuShibo" },
+            "Elesthra": { job: "Elestra", role: "Debuff", gear: "Geared", member: "KokkuShibo" },
+            "GabKulit": { job: "Saint", role: "Heal", gear: "Geared", member: "Kruks" },
+            "Enodia": { job: "Dark Summoner", role: "Utility", gear: "Geared", member: "Kruks" },
+            "Kruknaks": { job: "Gladiator", role: "Highlander", gear: "Geared", member: "Kruks" },
+            "OnatGaminG": { job: "Barbarian", role: "Highlander", gear: "Geared", member: "Kruks" },
+            "LittleAndy": { job: "Majesty", role: "Beyond Time", gear: "Geared", member: "Kruks" },
+            "Alkiera": { job: "Gear Master", role: "DPS", gear: "Normal Geared", member: "L I Y O W" },
+            "LIAM28": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "L I Y O W" },
+            "iTyla": { job: "Smasher", role: "Beyond Time", gear: "Normal Geared", member: "L I Y O W" },
+            "iKaliMUT": { job: "Soul Eater", role: "Debuff", gear: "Normal Geared", member: "L I Y O W" },
+            "IVy1": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "L I Y O W" },
+            "IVyne": { job: "Artillery", role: "DPS", gear: "Geared", member: "L I Y O W" },
+            "AriaGlacia": { job: "Elestra", role: "Debuff", gear: "Semi Geared", member: "L I Y O W" },
+            "Wilkins": { job: "Sniper", role: "DPS", gear: "Normal Geared", member: "LU" },
+            "FeezKat": { job: "Artillery", role: "DPS", gear: "Normal Geared", member: "Luxie" },
+            "MistyCat": { job: "Sniper", role: "DPS", gear: "Normal Geared", member: "Luxie" },
+            "VurryKat": { job: "Physician", role: "Heal", gear: "Normal Geared", member: "Luxie" },
+            "FluffyKat": { job: "Physician", role: "Heal", gear: "Normal Geared", member: "Luxie" },
+            "LilithChu": { job: "Elestra", role: "Debuff", gear: "Semi Geared", member: "Luxie" },
+            "OrlyFans": { job: "Barbarian", role: "Highlander", gear: "Normal Geared", member: "Orly" },
+            "Buknot": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "Orly" },
+            "OrlyHub": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "Orly" },
+            "Tamekam": { job: "Majesty", role: "Beyond Time", gear: "Normal Geared", member: "Orly" },
+            "Oridecon": { job: "Wind Walker", role: "Spiritual Boost", gear: "Geared", member: "Orly" },
+            "xPencilgon": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "Orly" },
+            "Juraii": { job: "Gladiator", role: "Highlander", gear: "Geared", member: "Rai" },
+            "Juraiii": { job: "Moonlord", role: "Highlander", gear: "Semi Geared", member: "Rai" },
+            "DestroRai": { job: "Destroyer", role: "Highlander", gear: "Semi Geared", member: "Rai" },
+            "HealerRai": { job: "Saint", role: "Heal", gear: "Semi Geared", member: "Rai" },
+            "iSalt": { job: "Majesty", role: "Beyond Time", gear: "Normal Geared", member: "Rai" },
+            "Inavakshe": { job: "Soul Eater", role: "Debuff", gear: "Semi Geared", member: "Rai" },
+            "Roxxx": { job: "Wind Walker", role: "Spiritual Boost", gear: "Semi Geared", member: "Rai" },
+            "Senriii": { job: "Tempest", role: "Spiritual Boost", gear: "Semi Geared", member: "Rai" },
+            "Aniyonie": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "Rai" },
+            "PallyRai": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Rai" },
+            "SaintRai": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Rai" },
+            "Shieldie": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Rai" },
+            "Shieldski": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Rai" },
+            "Jurai": { job: "Moonlord", role: "Highlander", gear: "Geared", member: "Rai" },
+            "BarbaRai": { job: "Barbarian", role: "Highlander", gear: "Geared", member: "Rai" },
+            "CutieSasha": { job: "Adept", role: "DPS", gear: "Normal Geared", member: "Sasha" },
+            "ShaShiiMie": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "Sasha" },
+            "TERRAbyts": { job: "Gear Master", role: "DPS", gear: "Normal Geared", member: "Terra" },
+            "xINNOVAx": { job: "Destroyer", role: "Highlander", gear: "Normal Geared", member: "Terra" },
+            "xRUSHx": { job: "Moonlord", role: "Highlander", gear: "Normal Geared", member: "Terra" },
+            "xVIOSx": { job: "Destroyer", role: "Highlander", gear: "Normal Geared", member: "Terra" },
+            "xYARISx": { job: "Destroyer", role: "Highlander", gear: "Normal Geared", member: "Terra" },
+            "PERR": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "Terra" },
+            "ZeeraDesu": { job: "Saint", role: "Heal", gear: "Semi Geared", member: "Terra" },
+            "xAVANZAx": { job: "Elestra", role: "Debuff", gear: "Normal Geared", member: "Terra" },
+            "PERRZ": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "Terra" },
+            "PERCENT": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Terra" },
+            "xTERRAx": { job: "Saleana", role: "DPS", gear: "Geared", member: "Terra" },
+            "xCAMRYx": { job: "Majesty", role: "Beyond Time", gear: "Semi Geared", member: "Terra" },
+            "FAABZ": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "Tittania" },
+            "YuHui": { job: "Elestra", role: "Debuff", gear: "Normal Geared", member: "Tittania" },
+            "JiaYu": { job: "Artillery", role: "DPS", gear: "Geared", member: "Tittania" },
+            "Titanniaa": { job: "Majesty", role: "Beyond Time", gear: "Normal Geared", member: "Tittania" },
+            "QWEDASD": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "Tittania" },
+            "xBlackfyre": { job: "Barbarian", role: "Highlander", gear: "Normal Geared", member: "Valor" },
+            "xCaius": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "Valor" },
+            "Valorhelm": { job: "Crusader", role: "DPS", gear: "Geared", member: "Valor" },
+            "XXIVss": { job: "Artillery", role: "DPS", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVzzzzzz": { job: "Shooting Star", role: "DPS", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVzzzsss": { job: "Blade Dancer", role: "DPS", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVssss": { job: "Barbarian", role: "Highlander", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVzzz": { job: "Moonlord", role: "Highlander", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVsssss": { job: "Physician", role: "Heal", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVz": { job: "Saint", role: "Heal", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVzz": { job: "Majesty", role: "Beyond Time", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVsss": { job: "Elestra", role: "Debuff", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVzzzz": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "XXIVs" },
+            "XXIVszszsz": { job: "Dark Summoner", role: "Utility", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVzzzzz": { job: "Guardian", role: "Tank", gear: "Semi Geared", member: "XXIVs" },
+            "XXIVzszszs": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "XXIVs" },
+            "Bings": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "XXIVs" },
+            "XXIVs": { job: "Guardian", role: "Tank", gear: "Geared", member: "XXIVs" },
+            "Kylieeee": { job: "Gear Master", role: "DPS", gear: "Normal Geared", member: "Yuri" },
+            "Valeriia": { job: "Artillery", role: "DPS", gear: "Normal Geared", member: "Yuri" },
+            "Sainty": { job: "Guardian", role: "Tank", gear: "Normal Geared", member: "Yuri" },
+            "Yuriitchi": { job: "Barbarian", role: "Highlander", gear: "Geared", member: "Yuri" },
+            "Shinjiroo": { job: "Saint", role: "Heal", gear: "Normal Geared", member: "Yuri" },
+            "ZinneD": { job: "Saint", role: "Heal", gear: "Geared", member: "Zinned" },
+            "Tottiiee": { job: "Majesty", role: "Beyond Time", gear: "Geared", member: "Zzia" },
+            "Tottie": { job: "Saleana", role: "DPS", gear: "Geared", member: "Zzia" },
+            "Ziabelle": { job: "Wind Walker", role: "Spiritual Boost", gear: "Semi Geared", member: "Zzia" },
+            "Alyx": { job: "Wind Walker", role: "Spiritual Boost", gear: "Normal Geared", member: "Rei" },
+            "Darksilyo": { job: "Dark Avenger", role: "DPS", gear: "Geared", member: "Bass" }
+        };
+
+        // ==========================================
+        // ⚙️ LOGIC & FUNCTIONALITY
+        // ==========================================
+
+        const jobColorMap = {
+            "Barbarian": "job-warrior", "Destroyer": "job-warrior", "Gladiator": "job-warrior", "Moonlord": "job-warrior", "Dark Avenger": "job-warrior",
+            "Artillery": "job-archer", "Sniper": "job-archer", "Tempest": "job-archer", "Wind Walker": "job-archer",
+            "Crusader": "job-cleric", "Guardian": "job-cleric", "Inquisitor": "job-cleric", "Saint": "job-cleric",
+            "Elestra": "job-sorceress", "Majesty": "job-sorceress", "Saleana": "job-sorceress", "Smasher": "job-sorceress",
+            "Adept": "job-academic", "Gear Master": "job-academic", "Physician": "job-academic", "Shooting Star": "job-academic",
+            "Blade Dancer": "job-kali", "Dark Summoner": "job-kali", "Soul Eater": "job-kali", "Spirit Dancer": "job-kali"
+        };
+
+        const roleToJobs = {
+            "DPS": ["Adept", "Artillery", "Blade Dancer", "Crusader", "Dark Avenger", "Gear Master", "Inquisitor", "Saleana", "Shooting Star", "Sniper"],
+            "Highlander": ["Barbarian", "Destroyer", "Gladiator", "Moonlord"],
+            "Tank": ["Guardian"],
+            "Beyond Time": ["Majesty", "Smasher"],
+            "Heal": ["Physician", "Saint"],
+            "Debuff": ["Elestra", "Soul Eater"],
+            "Utility": ["Dark Summoner", "Spirit Dancer"],
+            "Spiritual Boost": ["Tempest", "Wind Walker"]
+        };
+
+        // --- SAFE INITIALIZATIONS (No modern syntax that might crash older browsers) ---
+        const roleList = [];
+        for (let r in roleToJobs) {
+            if (roleToJobs.hasOwnProperty(r)) roleList.push(r);
+        }
+        roleList.sort();
+
+        let allJobsRaw = [];
+        for (let r in roleToJobs) {
+            if (roleToJobs.hasOwnProperty(r)) {
+                let jobs = roleToJobs[r];
+                for (let i = 0; i < jobs.length; i++) {
+                    if (allJobsRaw.indexOf(jobs[i]) === -1) {
+                        allJobsRaw.push(jobs[i]);
+                    }
+                }
+            }
+        }
+        const jobList = allJobsRaw.sort();
+
+        const allIGNs = [];
+        for (let ign in characterDB) {
+            if (characterDB.hasOwnProperty(ign)) {
+                allIGNs.push(ign);
+            }
+        }
+        allIGNs.sort(function(a, b) {
+            return a.localeCompare(b);
+        });
+
+        // State Tracking for Launches
+        let deployedIGNs = [];
+        let partyCounter = 1;
+        
+        // Initial Prefill Arrays - Left entirely blank!
+        const teamB_Prefill = [];
+        const teamC_Prefill = [];
+
+        function applyJobColor(jobSelectElement) {
+            const job = jobSelectElement.value;
+            jobSelectElement.classList.remove('job-warrior', 'job-archer', 'job-cleric', 'job-sorceress', 'job-academic', 'job-kali');
+            if (job && jobColorMap[job]) {
+                jobSelectElement.classList.add(jobColorMap[job]);
+            }
+        }
+
+        function handleRoleChange(selectElement) {
+            const row = selectElement.closest('tr');
+            const role = selectElement.value;
+            const jobSelect = row.querySelector('.job-dropdown');
+            const ignSelect = row.querySelector('.ign-dropdown');
+            
+            jobSelect.value = "";
+            ignSelect.value = "";
+            
+            populateJobs(jobSelect, role);
+            populateIGNs(ignSelect, role, "", "");
+            updateDataCells(row, "");
+            applyJobColor(jobSelect);
+        }
+
+        function handleJobChange(selectElement) {
+            const row = selectElement.closest('tr');
+            const roleSelect = row.querySelector('.role-dropdown');
+            const ignSelect = row.querySelector('.ign-dropdown');
+            
+            const job = selectElement.value;
+            const role = roleSelect.value;
+            
+            ignSelect.value = "";
+            
+            populateIGNs(ignSelect, role, job, "");
+            updateDataCells(row, "");
+            applyJobColor(selectElement);
+        }
+
+        function handleIGNChange(selectElement) {
+            const row = selectElement.closest('tr');
+            const ign = selectElement.value;
+            
+            const roleSelect = row.querySelector('.role-dropdown');
+            const jobSelect = row.querySelector('.job-dropdown');
+            
+            if (ign && characterDB[ign]) {
+                const data = characterDB[ign];
+                roleSelect.value = data.role;
+                populateJobs(jobSelect, data.role);
+                jobSelect.value = data.job;
+                populateIGNs(selectElement, data.role, data.job, ign);
+            }
+            
+            updateDataCells(row, ign);
+            applyJobColor(jobSelect);
+        }
+
+        function populateJobs(selectElem, role) {
+            const jobs = role ? roleToJobs[role] : jobList;
+            selectElem.innerHTML = '<option value=""></option>';
+            jobs.forEach(job => {
+                const opt = document.createElement('option');
+                opt.value = job;
+                opt.textContent = job;
+                selectElem.appendChild(opt);
+            });
+        }
+
+        // Updated to safely filter arrays
+        function populateIGNs(selectElem, role, job, currentValue) {
+            let igns = [];
+            for (let i = 0; i < allIGNs.length; i++) {
+                let ign = allIGNs[i];
+                if (deployedIGNs.indexOf(ign) === -1) {
+                    if (job) {
+                        if (characterDB[ign].job === job) igns.push(ign);
+                    } else if (role) {
+                        if (characterDB[ign].role === role) igns.push(ign);
+                    } else {
+                        igns.push(ign);
+                    }
+                }
+            }
+            
+            selectElem.innerHTML = '<option value=""></option>';
+            for (let i = 0; i < igns.length; i++) {
+                const opt = document.createElement('option');
+                opt.value = igns[i];
+                opt.textContent = igns[i];
+                selectElem.appendChild(opt);
+            }
+
+            if (currentValue && igns.indexOf(currentValue) !== -1) {
+                selectElem.value = currentValue;
+            } else if (currentValue && deployedIGNs.indexOf(currentValue) !== -1) {
+                selectElem.value = "";
+            }
+        }
+
+        function updateDataCells(row, ign) {
+            const gearCell = row.querySelector('.cell-gear');
+            const memberCell = row.querySelector('.cell-member');
+            
+            gearCell.className = 'cell-gear default-bg';
+            
+            if (ign && characterDB[ign]) {
+                const data = characterDB[ign];
+                gearCell.textContent = data.gear;
+                memberCell.textContent = data.member;
+                
+                if (data.gear === 'Geared') gearCell.classList.add('geared');
+                else if (data.gear === 'Semi Geared') gearCell.classList.add('semi-geared');
+                else if (data.gear === 'Normal Geared') gearCell.classList.add('normal-geared');
+            } else {
+                gearCell.textContent = '-';
+                memberCell.textContent = '-';
+            }
+        }
+
+        function buildTableRows(tbodyId, prefillData) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            
+            for (let i = 0; i < 8; i++) {
+                const tr = document.createElement('tr');
+
+                const tdRole = document.createElement('td');
+                const selectRole = document.createElement('select');
+                selectRole.className = 'sheet-dropdown role-dropdown';
+                selectRole.onchange = function() { handleRoleChange(this); };
+                
+                selectRole.innerHTML = '<option value=""></option>';
+                roleList.forEach(role => {
+                    const opt = document.createElement('option');
+                    opt.value = role;
+                    opt.textContent = role;
+                    selectRole.appendChild(opt);
+                });
+                tdRole.appendChild(selectRole);
+
+                const tdJob = document.createElement('td');
+                const selectJob = document.createElement('select');
+                selectJob.className = 'sheet-dropdown job-dropdown';
+                selectJob.onchange = function() { handleJobChange(this); };
+                populateJobs(selectJob, "");
+                tdJob.appendChild(selectJob);
+
+                const tdIGN = document.createElement('td');
+                const selectIGN = document.createElement('select');
+                selectIGN.className = 'sheet-dropdown ign-dropdown';
+                selectIGN.onchange = function() { handleIGNChange(this); };
+                populateIGNs(selectIGN, "", "", "");
+                tdIGN.appendChild(selectIGN);
+
+                const tdGear = document.createElement('td');
+                tdGear.className = 'cell-gear default-bg';
+                tdGear.textContent = '-';
+
+                const tdMember = document.createElement('td');
+                tdMember.className = 'cell-member';
+                tdMember.textContent = '-';
+
+                tr.appendChild(tdRole);
+                tr.appendChild(tdJob);
+                tr.appendChild(tdIGN);
+                tr.appendChild(tdGear);
+                tr.appendChild(tdMember);
+                tbody.appendChild(tr);
+
+                if (prefillData && prefillData[i]) {
+                    selectIGN.value = prefillData[i];
+                    handleIGNChange(selectIGN);
+                }
+            }
+        }
+
+        // ==========================================
+        // 🚀 LAUNCH & RESET LOGIC
+        // ==========================================
+
+        function launchTeam(teamContainer) {
+            const tbody = teamContainer.querySelector('tbody');
+            const rows = tbody.querySelectorAll('tr');
+            let teamMembers = [];
+            
+            rows.forEach(row => {
+                const ign = row.querySelector('.ign-dropdown').value;
+                if (ign) {
+                    teamMembers.push(ign);
+                }
+            });
+
+            if (teamMembers.length === 0) {
+                alert("Cannot launch an empty team. Please select members first.");
+                return;
+            }
+
+            teamMembers.forEach(member => deployedIGNs.push(member));
+
+            createDeployedTable(teamMembers);
+
+            rows.forEach(row => {
+                row.querySelector('.role-dropdown').value = "";
+                const jobDropdown = row.querySelector('.job-dropdown');
+                jobDropdown.value = "";
+                jobDropdown.className = 'sheet-dropdown job-dropdown'; 
+                row.querySelector('.ign-dropdown').value = "";
+                updateDataCells(row, "");
+            });
+
+            refreshAllDropdowns();
+        }
+
+        function createDeployedTable(members) {
+            const wrapper = document.getElementById('launched-teams-wrapper');
+            const container = document.getElementById('launched-teams-container');
+            
+            wrapper.style.display = 'block'; 
+
+            const teamDiv = document.createElement('div');
+            teamDiv.className = 'team-container';
+            
+            const header = document.createElement('div');
+            header.className = 'team-header';
+            header.style.backgroundColor = '#1f4a2c'; 
+            header.textContent = 'PARTY ' + (partyCounter++);
+
+            const launchBar = document.createElement('div');
+            launchBar.className = 'launch-bar';
+            launchBar.innerHTML = `
+                <span style="font-size: 0.9rem; color: #ccc;">Deployed Status: Active</span>
+                <button class="launch-btn retract-btn">Retract Team</button>
+            `;
+
+            launchBar.querySelector('.retract-btn').onclick = function() {
+                if(confirm("Are you sure you want to retract this team? Their members will be returned to the selection pool.")) {
+                    retractTeam(teamDiv, members);
+                }
+            };
+            
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Raid Position</th>
+                        <th>Job</th>
+                        <th>IGN</th>
+                        <th>Gear Classification</th>
+                        <th>Member</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+            const tbody = table.querySelector('tbody');
+            
+            members.forEach(ign => {
+                const data = characterDB[ign];
+                const tr = document.createElement('tr');
+                
+                let gearClass = 'default-bg';
+                if (data.gear === 'Geared') gearClass = 'geared';
+                else if (data.gear === 'Semi Geared') gearClass = 'semi-geared';
+                else if (data.gear === 'Normal Geared') gearClass = 'normal-geared';
+
+                let jobClass = jobColorMap[data.job] || '';
+
+                tr.innerHTML = `
+                    <td>${data.role}</td>
+                    <td class="${jobClass}">${data.job}</td>
+                    <td>${ign}</td>
+                    <td class="${gearClass}" style="color:#333;">${data.gear}</td>
+                    <td>${data.member}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            teamDiv.appendChild(header);
+            teamDiv.appendChild(launchBar);
+            teamDiv.appendChild(table);
+            container.appendChild(teamDiv);
+        }
+
+        function retractTeam(teamElement, membersToRestore) {
+            // Remove from global array
+            deployedIGNs = deployedIGNs.filter(ign => membersToRestore.indexOf(ign) === -1);
+            
+            // Remove DOM element
+            teamElement.remove();
+            
+            // Refresh dropdowns
+            refreshAllDropdowns();
+            
+            // Hide wrapper if empty
+            const container = document.getElementById('launched-teams-container');
+            if (container.children.length === 0) {
+                document.getElementById('launched-teams-wrapper').style.display = 'none';
+                partyCounter = 1; // Reset counter
+            }
+        }
+
+        function refreshAllDropdowns() {
+            document.querySelectorAll('.ign-dropdown').forEach(selectElem => {
+                const row = selectElem.closest('tr');
+                const role = row.querySelector('.role-dropdown').value;
+                const job = row.querySelector('.job-dropdown').value;
+                const currentVal = selectElem.value;
+                
+                populateIGNs(selectElem, role, job, currentVal);
+                
+                if (!selectElem.value && currentVal) {
+                    updateDataCells(row, "");
+                }
+            });
+        }
+
+        function resetWeek() {
+            if (!confirm("Are you sure you want to reset the week? This will clear all deployed teams and restore all members to the pool.")) {
+                return;
+            }
+
+            deployedIGNs = [];
+            partyCounter = 1;
+
+            const wrapper = document.getElementById('launched-teams-wrapper');
+            const container = document.getElementById('launched-teams-container');
+            container.innerHTML = '';
+            wrapper.style.display = 'none';
+
+            buildTableRows('team-b-body', teamB_Prefill);
+            buildTableRows('team-c-body', teamC_Prefill);
+        }
+
+        // --- BULLETPROOF INITIALIZER ---
+        function initTables() {
+            try {
+                buildTableRows('team-b-body', teamB_Prefill);
+                buildTableRows('team-c-body', teamC_Prefill);
+            } catch (err) {
+                console.error("Initialization Error: ", err);
+                alert("Whoops! Something went wrong rendering the tables. Check your console for details. Error: " + err.message);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTables);
+        } else {
+            initTables();
+        }
+    </script>
+</body>
+</html>
