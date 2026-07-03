@@ -205,7 +205,7 @@
     <!-- Header / Controls -->
     <div class="top-bar">
         <div class="top-section" style="text-align: left;">
-            <img src="Guild Banner.png" alt="Pantheon Guild Banner" class="guild-banner">
+            <img src="Guild Banner.jpg" alt="Pantheon Guild Banner" class="guild-banner">
         </div>
         <div class="top-section" style="text-align: center;">
             <div class="clock-container" id="manila-clock">Loading Time...</div>
@@ -217,9 +217,9 @@
 
     <!-- Active Builders -->
     <div class="container">
-        <!-- TEAM B -->
-        <div class="team-container" id="team-b-container">
-            <div class="team-header">TEAM B</div>
+        <!-- TEAM 1 -->
+        <div class="team-container" id="team-1-container">
+            <div class="team-header">TEAM 1</div>
             <div class="launch-bar">
                 <span style="font-size: 0.9rem; color: #ccc;">Drafting Phase</span>
                 <button class="launch-btn" onclick="launchTeam(this.closest('.team-container'))">Launch Team</button>
@@ -234,15 +234,15 @@
                         <th>Member</th>
                     </tr>
                 </thead>
-                <tbody id="team-b-body">
+                <tbody id="team-1-body">
                     <!-- Rows will be injected by JavaScript -->
                 </tbody>
             </table>
         </div>
 
-        <!-- TEAM C -->
-        <div class="team-container" id="team-c-container">
-            <div class="team-header">TEAM C</div>
+        <!-- TEAM 2 -->
+        <div class="team-container" id="team-2-container">
+            <div class="team-header">TEAM 2</div>
             <div class="launch-bar">
                 <span style="font-size: 0.9rem; color: #ccc;">Drafting Phase</span>
                 <button class="launch-btn" onclick="launchTeam(this.closest('.team-container'))">Launch Team</button>
@@ -257,7 +257,7 @@
                         <th>Member</th>
                     </tr>
                 </thead>
-                <tbody id="team-c-body">
+                <tbody id="team-2-body">
                     <!-- Rows will be injected by JavaScript -->
                 </tbody>
             </table>
@@ -282,27 +282,50 @@
 
     <script>
         // ==========================================
-        // 🕒 REAL-TIME MANILA CLOCK
+        // 🕒 BULLETPROOF REAL-TIME MANILA CLOCK
         // ==========================================
+        function getManilaDateObj() {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 8)); 
+        }
+
+        function formatTimeAMPM(dateObj, includeSeconds) {
+            let hours = dateObj.getHours();
+            let minutes = dateObj.getMinutes();
+            let seconds = dateObj.getSeconds();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            
+            if (includeSeconds) {
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                return hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+            }
+            return hours + ':' + minutes + ' ' + ampm;
+        }
+
         function updateClock() {
             const clockElem = document.getElementById('manila-clock');
             if (!clockElem) return;
             
-            const now = new Date();
+            const manilaTime = getManilaDateObj();
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             
-            // Format locked to Asia/Manila (PHT)
-            const options = {
-                timeZone: 'Asia/Manila',
-                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-            };
+            const dayStr = days[manilaTime.getDay()];
+            const monthStr = months[manilaTime.getMonth()];
+            const dateStr = manilaTime.getDate();
+            const yearStr = manilaTime.getFullYear();
+            const timeStr = formatTimeAMPM(manilaTime, true);
             
-            clockElem.textContent = '🇵🇭 ' + now.toLocaleString('en-US', options);
+            clockElem.textContent = '🇵🇭 ' + dayStr + ', ' + monthStr + ' ' + dateStr + ', ' + yearStr + ', ' + timeStr;
         }
         
-        // Start clock
         setInterval(updateClock, 1000);
-        updateClock(); // Initial call to avoid loading text
+        updateClock(); 
 
         // ==========================================
         // 🗄️ THE COMPREHENSIVE CHARACTER DATABASE
@@ -530,8 +553,8 @@
         let partyCounter = 1;
         
         // Blank Prefills
-        const teamB_Prefill = [];
-        const teamC_Prefill = [];
+        const team1_Prefill = [];
+        const team2_Prefill = [];
 
         function applyJobColor(jobSelectElement) {
             const job = jobSelectElement.value;
@@ -761,13 +784,10 @@
             header.style.backgroundColor = '#1f4a2c'; 
             header.textContent = 'PARTY ' + (partyCounter++);
 
-            // Generate precise Manila timestamp for deployment capture
-            const now = new Date();
-            const timestamp = now.toLocaleString('en-US', {
-                timeZone: 'Asia/Manila',
-                month: 'short', day: 'numeric', year: 'numeric',
-                hour: '2-digit', minute: '2-digit', hour12: true
-            });
+            // Generate precise Manila timestamp
+            const now = getManilaDateObj();
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const timestamp = months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear() + ', ' + formatTimeAMPM(now, false);
 
             const launchBar = document.createElement('div');
             launchBar.className = 'launch-bar';
@@ -899,15 +919,15 @@
             document.getElementById('launched-teams-wrapper').style.display = 'none';
 
             // Rebuild selection tables
-            buildTableRows('team-b-body', teamB_Prefill);
-            buildTableRows('team-c-body', teamC_Prefill);
+            buildTableRows('team-1-body', team1_Prefill);
+            buildTableRows('team-2-body', team2_Prefill);
         }
 
         // --- BULLETPROOF INITIALIZER ---
         function initTables() {
             try {
-                buildTableRows('team-b-body', teamB_Prefill);
-                buildTableRows('team-c-body', teamC_Prefill);
+                buildTableRows('team-1-body', team1_Prefill);
+                buildTableRows('team-2-body', team2_Prefill);
             } catch (err) {
                 console.error("Initialization Error: ", err);
                 alert("Whoops! Something went wrong rendering the tables. Check your console for details. Error: " + err.message);
