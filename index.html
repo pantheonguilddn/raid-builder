@@ -155,19 +155,19 @@
         .default-bg { background-color: #fcfcfc !important; }
         
         /* Gear Classification Colors */
-        .geared { background-color: #b5e5c5 !important; } /* Green */
-        .semi-geared { background-color: #fceea7 !important; } /* Yellow */
-        .normal-geared { background-color: #f7bab4 !important; } /* Red */
+        .geared { background-color: #b5e5c5 !important; } 
+        .semi-geared { background-color: #fceea7 !important; } 
+        .normal-geared { background-color: #f7bab4 !important; } 
 
         /* Job Base Class Colors */
-        .job-warrior { background-color: #fbd4b4 !important; color: #000 !important; } /* Orange */
-        .job-archer { background-color: #c6e0b4 !important; color: #000 !important; } /* Green */
-        .job-cleric { background-color: #bdf2fc !important; color: #000 !important; } /* Blue */
-        .job-sorceress { background-color: #e2caec !important; color: #000 !important; } /* Purple */
-        .job-academic { background-color: #ffe699 !important; color: #000 !important; } /* Yellow */
-        .job-kali { background-color: #c9e2de !important; color: #000 !important; } /* Teal */
+        .job-warrior { background-color: #fbd4b4 !important; color: #000 !important; } 
+        .job-archer { background-color: #c6e0b4 !important; color: #000 !important; } 
+        .job-cleric { background-color: #bdf2fc !important; color: #000 !important; } 
+        .job-sorceress { background-color: #e2caec !important; color: #000 !important; } 
+        .job-academic { background-color: #ffe699 !important; color: #000 !important; } 
+        .job-kali { background-color: #c9e2de !important; color: #000 !important; } 
 
-        /* Real Dropdown Styling mimicking Google Sheets */
+        /* Real Dropdown Styling */
         select.sheet-dropdown {
             width: 95%;
             padding: 6px;
@@ -184,25 +184,36 @@
 
         select.sheet-dropdown:focus {
             border: 2px solid #1a73e8;
-            padding: 5px; /* Offset for thicker border */
+            padding: 5px; 
+        }
+
+        /* Optgroup styling for dropdown visibility */
+        optgroup {
+            font-weight: bold;
+            color: #1a73e8;
+            background-color: #e8f0fe;
+        }
+        
+        optgroup[label*="Deployed"] {
+            color: #d93025;
+            background-color: #fce8e6;
+        }
+
+        option {
+            background-color: #fff;
+            color: #333;
+            font-weight: normal;
         }
 
         @media (max-width: 1000px) {
-            .container {
-                flex-direction: column;
-            }
-            .top-bar {
-                flex-direction: column;
-            }
-            .top-section {
-                text-align: center !important;
-            }
+            .container { flex-direction: column; }
+            .top-bar { flex-direction: column; }
+            .top-section { text-align: center !important; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Header / Controls -->
     <div class="top-bar">
         <div class="top-section" style="text-align: left;">
             <img src="Guild Banner.png" alt="Pantheon Guild Banner" class="guild-banner">
@@ -227,6 +238,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Run Type</th>
                         <th>Raid Position</th>
                         <th>Job</th>
                         <th>IGN</th>
@@ -234,9 +246,7 @@
                         <th>Member</th>
                     </tr>
                 </thead>
-                <tbody id="team-1-body">
-                    <!-- Rows will be injected by JavaScript -->
-                </tbody>
+                <tbody id="team-1-body"></tbody>
             </table>
         </div>
 
@@ -250,6 +260,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Run Type</th>
                         <th>Raid Position</th>
                         <th>Job</th>
                         <th>IGN</th>
@@ -257,32 +268,26 @@
                         <th>Member</th>
                     </tr>
                 </thead>
-                <tbody id="team-2-body">
-                    <!-- Rows will be injected by JavaScript -->
-                </tbody>
+                <tbody id="team-2-body"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- Deployed Teams Section (Hidden by default) -->
+    <!-- Deployed Teams Section -->
     <div id="launched-teams-wrapper" style="width: 100%; margin-top: 40px; display: none;">
         <h2 style="text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 20px;">🚀 Deployed Teams</h2>
-        <div id="launched-teams-container" class="container">
-            <!-- Launched tables will be appended here -->
-        </div>
+        <div id="launched-teams-container" class="container"></div>
     </div>
 
-    <!-- Historical Archive Section (Hidden by default) -->
+    <!-- Historical Archive Section -->
     <div id="historical-archive-wrapper" style="width: 100%; margin-top: 60px; display: none;">
         <h2 style="text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 20px; color: #888;">📚 Run History (Archived)</h2>
-        <div id="historical-archive-container" class="container" style="opacity: 0.8;">
-            <!-- Archived tables will be moved here -->
-        </div>
+        <div id="historical-archive-container" class="container" style="opacity: 0.8;"></div>
     </div>
 
     <script>
         // ==========================================
-        // 🕒 BULLETPROOF REAL-TIME MANILA CLOCK
+        // 🕒 MANILA CLOCK
         // ==========================================
         function getManilaDateObj() {
             const d = new Date();
@@ -295,11 +300,9 @@
             let minutes = dateObj.getMinutes();
             let seconds = dateObj.getSeconds();
             const ampm = hours >= 12 ? 'PM' : 'AM';
-            
             hours = hours % 12;
             hours = hours ? hours : 12; 
             minutes = minutes < 10 ? '0' + minutes : minutes;
-            
             if (includeSeconds) {
                 seconds = seconds < 10 ? '0' + seconds : seconds;
                 return hours + ':' + minutes + ':' + seconds + ' ' + ampm;
@@ -310,25 +313,16 @@
         function updateClock() {
             const clockElem = document.getElementById('manila-clock');
             if (!clockElem) return;
-            
             const manilaTime = getManilaDateObj();
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            
-            const dayStr = days[manilaTime.getDay()];
-            const monthStr = months[manilaTime.getMonth()];
-            const dateStr = manilaTime.getDate();
-            const yearStr = manilaTime.getFullYear();
-            const timeStr = formatTimeAMPM(manilaTime, true);
-            
-            clockElem.textContent = '🇵🇭 ' + dayStr + ', ' + monthStr + ' ' + dateStr + ', ' + yearStr + ', ' + timeStr;
+            clockElem.textContent = '🇵🇭 ' + days[manilaTime.getDay()] + ', ' + months[manilaTime.getMonth()] + ' ' + manilaTime.getDate() + ', ' + manilaTime.getFullYear() + ', ' + formatTimeAMPM(manilaTime, true);
         }
-        
         setInterval(updateClock, 1000);
         updateClock(); 
 
         // ==========================================
-        // 🗄️ THE COMPREHENSIVE CHARACTER DATABASE
+        // 🗄️ CHARACTER DATABASE
         // ==========================================
         const characterDB = {
             "Z4BIMARU": { job: "Barbarian", role: "Highlander", gear: "Semi Geared", member: "2JIZZ" },
@@ -497,10 +491,6 @@
             "r4zz": { job: "Destroyer", role: "Highlander", gear: "Geared", member: "Rizz" },
         };
 
-        // ==========================================
-        // ⚙️ LOGIC & FUNCTIONALITY
-        // ==========================================
-
         const jobColorMap = {
             "Barbarian": "job-warrior", "Destroyer": "job-warrior", "Gladiator": "job-warrior", "Moonlord": "job-warrior", "Dark Avenger": "job-warrior",
             "Artillery": "job-archer", "Sniper": "job-archer", "Tempest": "job-archer", "Wind Walker": "job-archer",
@@ -521,43 +511,12 @@
             "Spiritual Boost": ["Tempest", "Wind Walker"]
         };
 
-        // --- SAFE INITIALIZATIONS ---
-        const roleList = [];
-        for (let r in roleToJobs) {
-            if (roleToJobs.hasOwnProperty(r)) roleList.push(r);
-        }
-        roleList.sort();
+        const roleList = Object.keys(roleToJobs).sort();
+        const allJobsRaw = [...new Set(Object.values(roleToJobs).flat())].sort();
+        const allIGNs = Object.keys(characterDB).sort((a, b) => a.localeCompare(b));
 
-        let allJobsRaw = [];
-        for (let r in roleToJobs) {
-            if (roleToJobs.hasOwnProperty(r)) {
-                let jobs = roleToJobs[r];
-                for (let i = 0; i < jobs.length; i++) {
-                    if (allJobsRaw.indexOf(jobs[i]) === -1) {
-                        allJobsRaw.push(jobs[i]);
-                    }
-                }
-            }
-        }
-        const jobList = allJobsRaw.sort();
-
-        const allIGNs = [];
-        for (let ign in characterDB) {
-            if (characterDB.hasOwnProperty(ign)) {
-                allIGNs.push(ign);
-            }
-        }
-        allIGNs.sort(function(a, b) {
-            return a.localeCompare(b);
-        });
-
-        // State Tracking for Launches
         let deployedIGNs = [];
         let partyCounter = 1;
-        
-        // Blank Prefills
-        const team1_Prefill = [];
-        const team2_Prefill = [];
 
         function applyJobColor(jobSelectElement) {
             const job = jobSelectElement.value;
@@ -577,7 +536,7 @@
             ignSelect.value = "";
             
             populateJobs(jobSelect, role);
-            populateIGNs(ignSelect, role, "", "");
+            populateIGNs(ignSelect, role, "");
             updateDataCells(row, "");
             applyJobColor(jobSelect);
         }
@@ -592,7 +551,7 @@
             
             ignSelect.value = "";
             
-            populateIGNs(ignSelect, role, job, "");
+            populateIGNs(ignSelect, role, job);
             updateDataCells(row, "");
             applyJobColor(selectElement);
         }
@@ -600,7 +559,7 @@
         function handleIGNChange(selectElement) {
             const row = selectElement.closest('tr');
             const ign = selectElement.value;
-            
+            const runTypeSelect = row.querySelector('.runtype-dropdown');
             const roleSelect = row.querySelector('.role-dropdown');
             const jobSelect = row.querySelector('.job-dropdown');
             
@@ -610,6 +569,14 @@
                 populateJobs(jobSelect, data.role);
                 jobSelect.value = data.job;
                 populateIGNs(selectElement, data.role, data.job, ign);
+                
+                if (deployedIGNs.indexOf(ign) !== -1) {
+                    runTypeSelect.value = "Pania";
+                } else {
+                    runTypeSelect.value = "Normal";
+                }
+            } else {
+                runTypeSelect.value = "Normal";
             }
             
             updateDataCells(row, ign);
@@ -617,7 +584,7 @@
         }
 
         function populateJobs(selectElem, role) {
-            const jobs = role ? roleToJobs[role] : jobList;
+            const jobs = role ? roleToJobs[role] : allJobsRaw;
             selectElem.innerHTML = '<option value=""></option>';
             jobs.forEach(job => {
                 const opt = document.createElement('option');
@@ -628,32 +595,53 @@
         }
 
         function populateIGNs(selectElem, role, job, currentValue) {
-            let igns = [];
+            let availableIGNs = [];
+            let alreadyDeployedIGNs = [];
+
             for (let i = 0; i < allIGNs.length; i++) {
                 let ign = allIGNs[i];
-                if (deployedIGNs.indexOf(ign) === -1) {
-                    if (job) {
-                        if (characterDB[ign].job === job) igns.push(ign);
-                    } else if (role) {
-                        if (characterDB[ign].role === role) igns.push(ign);
+                let matchesFilter = true;
+
+                if (job && characterDB[ign].job !== job) matchesFilter = false;
+                else if (role && !job && characterDB[ign].role !== role) matchesFilter = false;
+
+                if (matchesFilter) {
+                    if (deployedIGNs.indexOf(ign) !== -1) {
+                        alreadyDeployedIGNs.push(ign);
                     } else {
-                        igns.push(ign);
+                        availableIGNs.push(ign);
                     }
                 }
             }
             
             selectElem.innerHTML = '<option value=""></option>';
-            for (let i = 0; i < igns.length; i++) {
-                const opt = document.createElement('option');
-                opt.value = igns[i];
-                opt.textContent = igns[i];
-                selectElem.appendChild(opt);
+            
+            if (availableIGNs.length > 0) {
+                const optgroupAvail = document.createElement('optgroup');
+                optgroupAvail.label = "✅ Available (Normal)";
+                availableIGNs.forEach(ign => {
+                    const opt = document.createElement('option');
+                    opt.value = ign;
+                    opt.textContent = ign;
+                    optgroupAvail.appendChild(opt);
+                });
+                selectElem.appendChild(optgroupAvail);
             }
 
-            if (currentValue && igns.indexOf(currentValue) !== -1) {
+            if (alreadyDeployedIGNs.length > 0) {
+                const optgroupDep = document.createElement('optgroup');
+                optgroupDep.label = "⚠️ Already Deployed (Needs Pania)";
+                alreadyDeployedIGNs.forEach(ign => {
+                    const opt = document.createElement('option');
+                    opt.value = ign;
+                    opt.textContent = ign;
+                    optgroupDep.appendChild(opt);
+                });
+                selectElem.appendChild(optgroupDep);
+            }
+
+            if (currentValue) {
                 selectElem.value = currentValue;
-            } else if (currentValue && deployedIGNs.indexOf(currentValue) !== -1) {
-                selectElem.value = "";
             }
         }
 
@@ -677,20 +665,24 @@
             }
         }
 
-        function buildTableRows(tbodyId, prefillData) {
+        function buildTableRows(tbodyId) {
             const tbody = document.getElementById(tbodyId);
             if (!tbody) return;
-
             tbody.innerHTML = '';
             
             for (let i = 0; i < 8; i++) {
                 const tr = document.createElement('tr');
 
+                const tdRunType = document.createElement('td');
+                const selectRunType = document.createElement('select');
+                selectRunType.className = 'sheet-dropdown runtype-dropdown';
+                selectRunType.innerHTML = '<option value="Normal">Normal</option><option value="Pania">Pania</option>';
+                tdRunType.appendChild(selectRunType);
+
                 const tdRole = document.createElement('td');
                 const selectRole = document.createElement('select');
                 selectRole.className = 'sheet-dropdown role-dropdown';
                 selectRole.onchange = function() { handleRoleChange(this); };
-                
                 selectRole.innerHTML = '<option value=""></option>';
                 roleList.forEach(role => {
                     const opt = document.createElement('option');
@@ -711,7 +703,7 @@
                 const selectIGN = document.createElement('select');
                 selectIGN.className = 'sheet-dropdown ign-dropdown';
                 selectIGN.onchange = function() { handleIGNChange(this); };
-                populateIGNs(selectIGN, "", "", "");
+                populateIGNs(selectIGN, "", "");
                 tdIGN.appendChild(selectIGN);
 
                 const tdGear = document.createElement('td');
@@ -722,17 +714,13 @@
                 tdMember.className = 'cell-member';
                 tdMember.textContent = '-';
 
+                tr.appendChild(tdRunType);
                 tr.appendChild(tdRole);
                 tr.appendChild(tdJob);
                 tr.appendChild(tdIGN);
                 tr.appendChild(tdGear);
                 tr.appendChild(tdMember);
                 tbody.appendChild(tr);
-
-                if (prefillData && prefillData[i]) {
-                    selectIGN.value = prefillData[i];
-                    handleIGNChange(selectIGN);
-                }
             }
         }
 
@@ -747,8 +735,9 @@
             
             rows.forEach(row => {
                 const ign = row.querySelector('.ign-dropdown').value;
+                const runType = row.querySelector('.runtype-dropdown').value;
                 if (ign) {
-                    teamMembers.push(ign);
+                    teamMembers.push({ ign: ign, runType: runType });
                 }
             });
 
@@ -757,11 +746,16 @@
                 return;
             }
 
-            teamMembers.forEach(member => deployedIGNs.push(member));
+            teamMembers.forEach(member => {
+                if (member.runType === "Normal" && deployedIGNs.indexOf(member.ign) === -1) {
+                    deployedIGNs.push(member.ign);
+                }
+            });
 
             createDeployedTable(teamMembers);
 
             rows.forEach(row => {
+                row.querySelector('.runtype-dropdown').value = "Normal";
                 row.querySelector('.role-dropdown').value = "";
                 const jobDropdown = row.querySelector('.job-dropdown');
                 jobDropdown.value = "";
@@ -773,10 +767,27 @@
             refreshAllDropdowns();
         }
 
+        // FAILSAFE: Allows editing the Run Type directly from the Deployed Table
+        function handleDeployedRunTypeChange(selectElement, ign) {
+            const newRunType = selectElement.value;
+
+            if (newRunType === "Pania") {
+                // If switched to Pania, remove them from deployed pool so they can be reused for a Normal run elsewhere
+                deployedIGNs = deployedIGNs.filter(item => item !== ign);
+            } else {
+                // If switched back to Normal, lock them out if they aren't already tracked
+                if (deployedIGNs.indexOf(ign) === -1) {
+                    deployedIGNs.push(ign);
+                }
+            }
+
+            // Refresh selection pools to reflect the change immediately
+            refreshAllDropdowns();
+        }
+
         function createDeployedTable(members) {
             const wrapper = document.getElementById('launched-teams-wrapper');
             const container = document.getElementById('launched-teams-container');
-            
             wrapper.style.display = 'block'; 
 
             const teamDiv = document.createElement('div');
@@ -787,7 +798,6 @@
             header.style.backgroundColor = '#1f4a2c'; 
             header.textContent = 'PARTY ' + (partyCounter++);
 
-            // Generate precise Manila timestamp
             const now = getManilaDateObj();
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const timestamp = months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear() + ', ' + formatTimeAMPM(now, false);
@@ -809,6 +819,7 @@
             table.innerHTML = `
                 <thead>
                     <tr>
+                        <th>Run Type (Editable Failsafe)</th>
                         <th>Raid Position</th>
                         <th>Job</th>
                         <th>IGN</th>
@@ -821,8 +832,8 @@
 
             const tbody = table.querySelector('tbody');
             
-            members.forEach(ign => {
-                const data = characterDB[ign];
+            members.forEach(member => {
+                const data = characterDB[member.ign];
                 const tr = document.createElement('tr');
                 
                 let gearClass = 'default-bg';
@@ -832,10 +843,17 @@
 
                 let jobClass = jobColorMap[data.job] || '';
 
+                // FAILSAFE FEATURE: Built-in dropdown inside the deployed table row
                 tr.innerHTML = `
+                    <td>
+                        <select class="sheet-dropdown" onchange="handleDeployedRunTypeChange(this, '${member.ign}')">
+                            <option value="Normal" ${member.runType === 'Normal' ? 'selected' : ''}>Normal</option>
+                            <option value="Pania" ${member.runType === 'Pania' ? 'selected' : ''}>Pania</option>
+                        </select>
+                    </td>
                     <td>${data.role}</td>
                     <td class="${jobClass}">${data.job}</td>
-                    <td>${ign}</td>
+                    <td>${member.ign}</td>
                     <td class="${gearClass}" style="color:#333;">${data.gear}</td>
                     <td>${data.member}</td>
                 `;
@@ -849,20 +867,25 @@
         }
 
         function retractTeam(teamElement, membersToRestore) {
-            // Remove from global array
-            deployedIGNs = deployedIGNs.filter(ign => membersToRestore.indexOf(ign) === -1);
-            
-            // Remove DOM element
+            // Collect the run types currently represented in the DOM table rows (respects manual edits made via the failsafe)
+            const rows = teamElement.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                const currentRunType = row.querySelector('select').value;
+                membersToRestore[index].runType = currentRunType;
+            });
+
+            const ignsToRestore = membersToRestore
+                .filter(m => m.runType === 'Normal')
+                .map(m => m.ign);
+
+            deployedIGNs = deployedIGNs.filter(ign => ignsToRestore.indexOf(ign) === -1);
             teamElement.remove();
-            
-            // Refresh dropdowns
             refreshAllDropdowns();
             
-            // Hide wrapper if empty
             const container = document.getElementById('launched-teams-container');
             if (container.children.length === 0) {
                 document.getElementById('launched-teams-wrapper').style.display = 'none';
-                partyCounter = 1; // Reset counter if everything is retracted
+                partyCounter = 1; 
             }
         }
 
@@ -897,50 +920,36 @@
             const archiveContainer = document.getElementById('historical-archive-container');
             const archiveWrapper = document.getElementById('historical-archive-wrapper');
 
-            // Move Active Teams to History
             archiveWrapper.style.display = 'block';
             
             activeTeams.forEach(team => {
-                // Remove the Retract button so history can't be interacted with
                 const retractBtn = team.querySelector('.retract-btn');
                 if (retractBtn) retractBtn.remove();
                 
-                // Change header styling to indicate it is archived
                 const header = team.querySelector('.team-header');
                 if (header) {
                     header.style.backgroundColor = '#444';
                     header.textContent += ' (ARCHIVED)';
                 }
-
-                // Push to archive container
                 archiveContainer.appendChild(team);
             });
 
-            // Wipe Active arrays and DOM
             deployedIGNs = [];
             partyCounter = 1;
             document.getElementById('launched-teams-wrapper').style.display = 'none';
 
-            // Rebuild selection tables
-            buildTableRows('team-1-body', team1_Prefill);
-            buildTableRows('team-2-body', team2_Prefill);
-        }
-
-        // --- BULLETPROOF INITIALIZER ---
-        function initTables() {
-            try {
-                buildTableRows('team-1-body', team1_Prefill);
-                buildTableRows('team-2-body', team2_Prefill);
-            } catch (err) {
-                console.error("Initialization Error: ", err);
-                alert("Whoops! Something went wrong rendering the tables. Check your console for details. Error: " + err.message);
-            }
+            buildTableRows('team-1-body');
+            buildTableRows('team-2-body');
         }
 
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initTables);
+            document.addEventListener('DOMContentLoaded', () => {
+                buildTableRows('team-1-body');
+                buildTableRows('team-2-body');
+            });
         } else {
-            initTables();
+            buildTableRows('team-1-body');
+            buildTableRows('team-2-body');
         }
     </script>
 </body>
